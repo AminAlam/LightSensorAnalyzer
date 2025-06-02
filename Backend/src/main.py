@@ -40,7 +40,7 @@ class LightSensorAnalyzer:
         ports = serial.tools.list_ports.comports()
         for port in ports:
             print(port.description)
-            if 'Arduino' in port.description or 'USB' in port.description or 'Nano' in port.description:
+            if 'Arduino' in port.description or 'Nano' in port.description:
                 return port.device
         return None
     
@@ -226,29 +226,43 @@ class LightSensorAnalyzer:
     
     def read_serial_data(self):
         """Background thread to read serial data"""
+        buffer = ""  # Buffer to store partial lines
         while self.is_running:
             try:
                 if self.serial_connection and self.serial_connection.in_waiting:
-                    line = self.serial_connection.readline().decode('utf-8')
-                    parsed_data = self.parse_serial_data(line)
+                    # Read all available bytes
+                    raw_data = self.serial_connection.read(self.serial_connection.in_waiting)
+                    try:
+                        # Decode bytes to string and add to buffer
+                        buffer += raw_data.decode('utf-8')
+                    except UnicodeDecodeError:
+                        # If decode fails, clear buffer and continue
+                        buffer = ""
+                        continue
                     
-                    if parsed_data:
-                        timestamp, als_raw, white_raw, lux = parsed_data
+                    # Process complete lines
+                    while '\n' in buffer:
+                        line, buffer = buffer.split('\n', 1)
+                        parsed_data = self.parse_serial_data(line)
                         
-                        with self.data_lock:
-                            self.timestamps.append(timestamp)
-                            self.als_values.append(als_raw)
-                            self.white_values.append(white_raw)
-                            self.lux_values.append(lux)
+                        if parsed_data:
+                            timestamp, als_raw, white_raw, lux = parsed_data
                             
-                            # Add to analysis windows
-                            self.window_1.append(lux)
-                            self.window_2.append(lux)
-                            self.window_3.append(lux)
+                            with self.data_lock:
+                                self.timestamps.append(timestamp)
+                                self.als_values.append(als_raw)
+                                self.white_values.append(white_raw)
+                                self.lux_values.append(lux)
+                                
+                                # Add to analysis windows
+                                self.window_1.append(lux)
+                                self.window_2.append(lux)
+                                self.window_3.append(lux)
                 
-                time.sleep(0.01)  # Small delay
+                time.sleep(0.005)  # Small delay
             except Exception as e:
                 print(f"Serial read error: {e}")
+                buffer = ""  # Clear buffer on error
                 time.sleep(1)
     
     def start(self):
@@ -266,6 +280,7 @@ class LightSensorAnalyzer:
         self.is_running = False
         if self.serial_connection:
             self.serial_connection.close()
+
 
 # Flask web application
 app = Flask(__name__)
