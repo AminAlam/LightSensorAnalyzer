@@ -227,6 +227,8 @@ class LightSensorAnalyzer:
     def read_serial_data(self):
         """Background thread to read serial data"""
         buffer = ""  # Buffer to store partial lines
+        last_timestamp = None  # Track the last timestamp we processed
+        
         while self.is_running:
             try:
                 if self.serial_connection and self.serial_connection.in_waiting:
@@ -248,6 +250,10 @@ class LightSensorAnalyzer:
                         if parsed_data:
                             timestamp, als_raw, white_raw, lux = parsed_data
                             
+                            # Skip if we've already processed this timestamp
+                            if last_timestamp is not None and timestamp <= last_timestamp:
+                                continue
+                                
                             with self.data_lock:
                                 self.timestamps.append(timestamp)
                                 self.als_values.append(als_raw)
@@ -258,6 +264,8 @@ class LightSensorAnalyzer:
                                 self.window_1.append(lux)
                                 self.window_2.append(lux)
                                 self.window_3.append(lux)
+                                
+                            last_timestamp = timestamp  # Update last processed timestamp
                 
                 time.sleep(0.005)  # Small delay
             except Exception as e:

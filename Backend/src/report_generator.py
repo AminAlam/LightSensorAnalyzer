@@ -142,6 +142,7 @@ class ReportGenerator:
     def _record_data(self):
         """Background thread to record data to file"""
         sample_count = 0
+        last_timestamp = None  # Track the last timestamp we recorded
         
         while self.is_recording and (time.time() - self.recording_start_time) < self.recording_duration:
             try:
@@ -153,10 +154,15 @@ class ReportGenerator:
                     with open(self.data_file_path, 'a', newline='') as csvfile:
                         writer = csv.writer(csvfile)
                         for i in range(len(timestamps)):
+                            # Skip if we've already recorded this timestamp
+                            if last_timestamp is not None and timestamps[i] <= last_timestamp:
+                                continue
+                                
                             writer.writerow([timestamps[i], lux_values[i], als_values[i]])
+                            last_timestamp = timestamps[i]
                             sample_count += 1
                 
-                time.sleep(0.0005)  # Record every 10ms
+                time.sleep(0.001)  # Record every 1ms
                 
             except Exception as e:
                 print(f"Recording error: {e}")
