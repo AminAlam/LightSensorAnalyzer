@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light Sensor Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.0/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+            max-width: 100vw;
+        }
+        
+        .left-sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .left-sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        
+        .right-sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .right-sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #4a5568;
+            margin: 0;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .status.connected {
+            background-color: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #68d391;
+        }
+        
+        .status.disconnected {
+            background-color: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #fc8181;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 140px);
+        }
+        
+        .chart {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart div {
+            height: 100%;
+        }
+        
+        .sidebar-section {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #dee2e6;
+        }
+        
+        .sidebar-section h2 {
+            color: #2d3748;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            text-align: center;
+            border-bottom: 2px solid #4299e1;
+            padding-bottom: 8px;
+        }
+        
+        .sidebar-section h3 {
+            color: #495057;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .analysis-window {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #dee2e6;
+        }
+        
+        .analysis-window h3 {
+            margin-top: 0;
+            color: #495057;
+            font-size: 1.1em;
+            border-bottom: 1px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .metric-value {
+            font-size: 1em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .frequency {
+            color: #28a745 !important;
+        }
+        
+        .duty-cycle {
+            color: #fd7e14 !important;
+        }
+        
+        .data-size {
+            color: #6f42c1 !important;
+        }
+        
+        .timing {
+            color: #17a2b8 !important;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .window-badge {
+            background: #007bff;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            margin-left: 8px;
+        }
+        
+        /* Report Generation Styles */
+        .report-controls {
+            margin-bottom: 15px;
+        }
+        
+        .control-group {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.9em;
+        }
+        
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .control-group input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        
+        .control-group small {
+            color: #718096;
+            font-size: 0.8em;
+            margin-top: 4px;
+            display: block;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(252, 129, 129, 0.4);
+        }
+        
+        .progress-container {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 16px;
+            background: #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .progress-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+        }
+        
+        .progress-item {
+            background: #f7fafc;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        
+        .progress-label {
+            font-size: 0.8em;
+            color: #718096;
+            margin-bottom: 2px;
+        }
+        
+        .progress-value {
+            font-size: 1em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .status-message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+            font-size: 0.9em;
+        }
+        
+        .status-message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #68d391;
+            display: block;
+        }
+        
+        .status-message.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+            display: block;
+        }
+        
+        .status-message.info {
+            background: #bee3f8;
+            color: #2a4365;
+            border: 1px solid #63b3ed;
+            display: block;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            top: 20px;
+            background: #4299e1;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar-toggle:hover {
+            background: #3182ce;
+            transform: scale(1.1);
+        }
+        
+        .left-sidebar .sidebar-toggle {
+            right: -20px;
+        }
+        
+        .right-sidebar .sidebar-toggle {
+            left: -20px;
+        }
+        
+        .left-sidebar.collapsed .sidebar-toggle {
+            right: -40px;
+        }
+        
+        .right-sidebar.collapsed .sidebar-toggle {
+            left: -40px;
+        }
+        
+        .toggle-overlay {
+            position: fixed;
+            top: 20px;
+            background: #4299e1;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-overlay:hover {
+            background: #3182ce;
+            transform: scale(1.1);
+        }
+        
+        .toggle-overlay.left-toggle {
+            left: 20px;
+        }
+        
+        .toggle-overlay.right-toggle {
+            right: 20px;
+        }
+        
+        /* Show overlay buttons when sidebars are collapsed */
+        .main-layout.left-collapsed .toggle-overlay.left-toggle {
+            display: flex;
+        }
+        
+        .main-layout.right-collapsed .toggle-overlay.right-toggle {
+            display: flex;
+        }
+        
+        /* Update main content margins when sidebars are collapsed */
+        .main-layout.left-collapsed .main-content {
+            margin-left: 0;
+        }
+        
+        .main-layout.right-collapsed .main-content {
+            margin-right: 0;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            
+            .left-sidebar, .right-sidebar {
+                width: 100%;
+                order: 1;
+            }
+            
+            .main-content {
+                order: 2;
+            }
+            
+            .charts-container {
+                height: 600px;
+            }
+            
+            /* Hide sidebar toggles on mobile - auto-collapse instead */
+            .sidebar-toggle, .toggle-overlay {
+                display: none;
+            }
+            
+            /* Auto-collapse sidebars on mobile */
+            .left-sidebar, .right-sidebar {
+                display: none;
+            }
+            
+            .left-sidebar.mobile-visible, .right-sidebar.mobile-visible {
+                display: block;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 1fr);
+                height: auto;
+            }
+            
+            .chart {
+                height: 400px;
+            }
+            
+            .progress-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout" id="mainLayout">
+        <!-- Left Sidebar - Report Generation -->
+        <div class="left-sidebar" id="leftSidebar">
+            <button class="sidebar-toggle" id="leftToggle" title="Toggle Report Panel">
+                ◀
+            </button>
+            
+            <div class="header">
+                <h1>🌟 VEML6030 Analyzer</h1>
+                <div id="status" class="status disconnected">
+                    Connecting to sensor...
+                </div>
+            </div>
+            
+            <!-- Report Generation Section -->
+            <div class="sidebar-section">
+                <h2>📊 Report Generation</h2>
+                
+                <div class="report-controls">
+                    <div class="control-group">
+                        <label for="recordingDuration">Recording Duration (minutes)</label>
+                        <input type="number" id="recordingDuration" min="0.1" max="120" step="0.1" value="0.5" placeholder="Enter duration">
+                        <small>Recommended: 0.5 min for testing, 30+ min for analysis</small>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Recording Status</label>
+                        <div id="recordingStatus" style="padding: 8px; background: #f7fafc; border-radius: 4px; font-weight: 500; color: #4a5568; font-size: 0.9em;">
+                            Not recording
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="startRecording" class="btn btn-primary">
+                        🎥 Start Recording
+                    </button>
+                    <button id="stopRecording" class="btn btn-danger" disabled>
+                        ⏹️ Stop Recording
+                    </button>
+                </div>
+                
+                <div id="progressContainer" class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <div class="progress-item">
+                            <div class="progress-label">Elapsed</div>
+                            <div id="elapsedTime" class="progress-value">00:00</div>
+                        </div>
+                        <div class="progress-item">
+                            <div class="progress-label">Remaining</div>
+                            <div id="remainingTime" class="progress-value">00:00</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 8px; font-weight: bold; color: #2d3748;">
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+        </div>
+        
+        <!-- Main Content - Charts -->
+        <div class="main-content">
+            <!-- Toggle buttons for collapsed sidebars -->
+            <button class="toggle-overlay left-toggle" id="leftToggleOverlay" title="Show Report Panel">
+                ▶
+            </button>
+            <button class="toggle-overlay right-toggle" id="rightToggleOverlay" title="Show Analysis Panel">
+                ◀
+            </button>
+            
+            <div class="charts-container">
+                <div class="chart">
+                    <div id="luxChart">
+                        <div class="loading"></div>
+                    </div>
+                </div>
+                <div class="chart">
+                    <div id="alsChart">
+                        <div class="loading"></div>
+                    </div>
+                </div>
+                <div class="chart">
+                    <div id="luxFFTChart">
+                        <div class="loading"></div>
+                    </div>
+                </div>
+                <div class="chart">
+                    <div id="alsFFTChart">
+                        <div class="loading"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar - Measurements -->
+        <div class="right-sidebar" id="rightSidebar">
+            <button class="sidebar-toggle" id="rightToggle" title="Toggle Analysis Panel">
+                ▶
+            </button>
+            
+            <div class="sidebar-section">
+                <h2>📈 Signal Analysis</h2>
+                
+                <div class="analysis-window">
+                    <h3>Short Term<span class="window-badge">2s</span></h3>
+                    <div class="metric">
+                        <span class="metric-label">Data Points:</span>
+                        <span class="metric-value data-size" id="window1-size">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Frequency:</span>
+                        <span class="metric-value frequency" id="window1-freq">0.00 Hz</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Period:</span>
+                        <span class="metric-value frequency" id="window1-period">0.00 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Duty Cycle:</span>
+                        <span class="metric-value duty-cycle" id="window1-duty">0.00%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Rise Time:</span>
+                        <span class="metric-value timing" id="window1-rise">0.00 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Fall Time:</span>
+                        <span class="metric-value timing" id="window1-fall">0.00 ms</span>
+                    </div>
+                </div>
+                
+                <div class="analysis-window">
+                    <h3>Medium Term<span class="window-badge">10s</span></h3>
+                    <div class="metric">
+                        <span class="metric-label">Data Points:</span>
+                        <span class="metric-value data-size" id="window2-size">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Frequency:</span>
+                        <span class="metric-value frequency" id="window2-freq">0.00 Hz</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Period:</span>
+                        <span class="metric-value frequency" id="window2-period">0.00 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Duty Cycle:</span>
+                        <span class="metric-value duty-cycle" id="window2-duty">0.00%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Rise Time:</span>
+                        <span class="metric-value timing" id="window2-rise">0.00 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Fall Time:</span>
+                        <span class="metric-value timing" id="window2-fall">0.00 ms</span>
+                    </div>
+                </div>
+                
+                <div class="analysis-window">
+                    <h3>Long Term<span class="window-badge">60s</span></h3>
+                    <div class="metric">
+                        <span class="metric-label">Data Points:</span>
+                        <span class="metric-value data-size" id="window3-size">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Frequency:</span>
+                        <span class="metric-value frequency" id="window3-freq">0.00 Hz</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Period:</span>
+                        <span class="metric-value frequency" id="window3-period">0.00 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Duty Cycle:</span>
+                        <span class="metric-value duty-cycle" id="window3-duty">0.00%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Rise Time:</span>
+                        <span class="metric-value timing" id="window3-rise">0.00 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Fall Time:</span>
+                        <span class="metric-value timing" id="window3-fall">0.00 ms</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Chart configuration
+        const chartConfig = {
+            responsive: true,
+            displayModeBar: true,
+            scrollZoom: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
+        };
+        
+        // Sidebar management
+        class SidebarManager {
+            constructor() {
+                this.leftSidebar = document.getElementById('leftSidebar');
+                this.rightSidebar = document.getElementById('rightSidebar');
+                this.mainLayout = document.getElementById('mainLayout');
+                
+                this.leftToggle = document.getElementById('leftToggle');
+                this.rightToggle = document.getElementById('rightToggle');
+                this.leftToggleOverlay = document.getElementById('leftToggleOverlay');
+                this.rightToggleOverlay = document.getElementById('rightToggleOverlay');
+                
+                this.initializeFromStorage();
+                this.setupEventListeners();
+            }
+            
+            initializeFromStorage() {
+                // Restore sidebar states from localStorage
+                const leftCollapsed = localStorage.getItem('leftSidebarCollapsed') === 'true';
+                const rightCollapsed = localStorage.getItem('rightSidebarCollapsed') === 'true';
+                
+                if (leftCollapsed) {
+                    this.collapseLeftSidebar(false); // false = don't save to storage again
+                }
+                if (rightCollapsed) {
+                    this.collapseRightSidebar(false);
+                }
+            }
+            
+            setupEventListeners() {
+                // Left sidebar toggles
+                this.leftToggle.addEventListener('click', () => this.toggleLeftSidebar());
+                this.leftToggleOverlay.addEventListener('click', () => this.toggleLeftSidebar());
+                
+                // Right sidebar toggles
+                this.rightToggle.addEventListener('click', () => this.toggleRightSidebar());
+                this.rightToggleOverlay.addEventListener('click', () => this.toggleRightSidebar());
+            }
+            
+            toggleLeftSidebar() {
+                if (this.leftSidebar.classList.contains('collapsed')) {
+                    this.expandLeftSidebar();
+                } else {
+                    this.collapseLeftSidebar();
+                }
+            }
+            
+            toggleRightSidebar() {
+                if (this.rightSidebar.classList.contains('collapsed')) {
+                    this.expandRightSidebar();
+                } else {
+                    this.collapseRightSidebar();
+                }
+            }
+            
+            collapseLeftSidebar(saveState = true) {
+                this.leftSidebar.classList.add('collapsed');
+                this.mainLayout.classList.add('left-collapsed');
+                this.leftToggle.innerHTML = '▶';
+                this.leftToggle.title = 'Show Report Panel';
+                this.leftToggleOverlay.style.display = 'flex';
+                
+                if (saveState) {
+                    localStorage.setItem('leftSidebarCollapsed', 'true');
+                }
+                
+                // Resize charts after animation
+                setTimeout(() => this.resizeCharts(), 300);
+            }
+            
+            expandLeftSidebar(saveState = true) {
+                this.leftSidebar.classList.remove('collapsed');
+                this.mainLayout.classList.remove('left-collapsed');
+                this.leftToggle.innerHTML = '◀';
+                this.leftToggle.title = 'Hide Report Panel';
+                this.leftToggleOverlay.style.display = 'none';
+                
+                if (saveState) {
+                    localStorage.setItem('leftSidebarCollapsed', 'false');
+                }
+                
+                // Resize charts after animation
+                setTimeout(() => this.resizeCharts(), 300);
+            }
+            
+            collapseRightSidebar(saveState = true) {
+                this.rightSidebar.classList.add('collapsed');
+                this.mainLayout.classList.add('right-collapsed');
+                this.rightToggle.innerHTML = '◀';
+                this.rightToggle.title = 'Show Analysis Panel';
+                this.rightToggleOverlay.style.display = 'flex';
+                
+                if (saveState) {
+                    localStorage.setItem('rightSidebarCollapsed', 'true');
+                }
+                
+                // Resize charts after animation
+                setTimeout(() => this.resizeCharts(), 300);
+            }
+            
+            expandRightSidebar(saveState = true) {
+                this.rightSidebar.classList.remove('collapsed');
+                this.mainLayout.classList.remove('right-collapsed');
+                this.rightToggle.innerHTML = '▶';
+                this.rightToggle.title = 'Hide Analysis Panel';
+                this.rightToggleOverlay.style.display = 'none';
+                
+                if (saveState) {
+                    localStorage.setItem('rightSidebarCollapsed', 'false');
+                }
+                
+                // Resize charts after animation
+                setTimeout(() => this.resizeCharts(), 300);
+            }
+            
+            resizeCharts() {
+                // Resize all Plotly charts to fit new layout
+                try {
+                    if (document.getElementById('luxChart')._fullLayout) {
+                        Plotly.Plots.resize('luxChart');
+                    }
+                    if (document.getElementById('alsChart')._fullLayout) {
+                        Plotly.Plots.resize('alsChart');
+                    }
+                    if (document.getElementById('luxFFTChart')._fullLayout) {
+                        Plotly.Plots.resize('luxFFTChart');
+                    }
+                    if (document.getElementById('alsFFTChart')._fullLayout) {
+                        Plotly.Plots.resize('alsFFTChart');
+                    }
+                } catch (error) {
+                    console.log('Charts not yet initialized for resize');
+                }
+            }
+        }
+        
+        // Initialize sidebar manager
+        const sidebarManager = new SidebarManager();
+        
+        // Common layout configuration for better height utilization
+        const getLayoutConfig = (title, xAxisTitle, yAxisTitle) => ({
+            title: title,
+            xaxis: { title: xAxisTitle },
+            yaxis: { title: yAxisTitle },
+            template: 'plotly_white',
+            margin: { l: 60, r: 30, t: 60, b: 60 },
+            height: 450,
+            autosize: true
+        });
+        
+        // Connection status handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            document.getElementById('status').className = 'status connected';
+            document.getElementById('status').textContent = 'Connected to sensor';
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+            document.getElementById('status').className = 'status disconnected';
+            document.getElementById('status').textContent = 'Disconnected from sensor';
+        });
+        
+        socket.on('status', function(data) {
+            console.log('Status:', data.message);
+        });
+        
+        // Variables for performance monitoring
+        let updateCount = 0;
+        let lastUpdateTime = Date.now();
+        
+        // Report Generation Variables
+        let isRecording = false;
+        let recordingStartTime = null;
+        let progressUpdateInterval = null;
+        let reportDownloaded = false;
+        
+        // Report Generation Functions
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function showStatusMessage(message, type = 'info') {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            
+            // Auto-hide after 5 seconds for success/info messages
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function updateRecordingUI(recordingData) {
+            const { is_recording, elapsed_time, remaining_time, progress, is_generating_report, report_ready, report_filename } = recordingData;
+            
+            if (is_recording !== isRecording) {
+                isRecording = is_recording;
+                
+                // Update button states
+                document.getElementById('startRecording').disabled = is_recording;
+                document.getElementById('stopRecording').disabled = !is_recording;
+                document.getElementById('recordingDuration').disabled = is_recording;
+                
+                // Show/hide progress container
+                const progressContainer = document.getElementById('progressContainer');
+                if (is_recording) {
+                    progressContainer.classList.add('active');
+                    recordingStartTime = Date.now() - (elapsed_time * 1000);
+                    reportDownloaded = false;  // Reset download flag
+                } else {
+                    // Keep progress container visible during report generation
+                    if (!is_generating_report && !report_ready) {
+                        progressContainer.classList.remove('active');
+                    }
+                }
+            }
+            
+            if (is_recording) {
+                // Update progress bar and info during recording
+                document.getElementById('progressFill').style.width = `${progress}%`;
+                document.getElementById('elapsedTime').textContent = formatTime(elapsed_time);
+                document.getElementById('remainingTime').textContent = formatTime(remaining_time);
+                document.getElementById('progressPercent').textContent = `${progress.toFixed(1)}%`;
+                
+                // Update recording status
+                document.getElementById('recordingStatus').textContent = 
+                    `Recording... ${progress.toFixed(1)}% complete`;
+                document.getElementById('recordingStatus').style.background = '#c6f6d5';
+                document.getElementById('recordingStatus').style.color = '#22543d';
+            } else if (is_generating_report) {
+                // Show report generation status
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('elapsedTime').textContent = 'Complete';
+                document.getElementById('remainingTime').textContent = '--:--';
+                document.getElementById('progressPercent').textContent = 'Generating Report...';
+                
+                document.getElementById('recordingStatus').textContent = 
+                    'Recording complete - Generating PDF report...';
+                document.getElementById('recordingStatus').style.background = '#bee3f8';
+                document.getElementById('recordingStatus').style.color = '#2a4365';
+                
+                showStatusMessage('Recording completed! Generating PDF report...', 'info');
+            } else {
+                // Recording and report generation both complete
+                document.getElementById('recordingStatus').textContent = 'Not recording';
+                document.getElementById('recordingStatus').style.background = '#f7fafc';
+                document.getElementById('recordingStatus').style.color = '#4a5568';
+                
+                // Hide progress container when everything is done
+                const progressContainer = document.getElementById('progressContainer');
+                progressContainer.classList.remove('active');
+                
+                // Check if report is ready and hasn't been downloaded yet
+                if (report_ready && report_filename && !reportDownloaded) {
+                    reportDownloaded = true;
+                    
+                    showStatusMessage(`Report generated successfully! Downloading: ${report_filename}`, 'success');
+                    
+                    // Automatically trigger download
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `/api/download-report/${report_filename}`;
+                    downloadLink.download = report_filename;
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    
+                    console.log(`Report automatically downloaded: ${report_filename}`);
+                }
+            }
+        }
+        
+        // Event Listeners for Report Generation
+        document.getElementById('startRecording').addEventListener('click', async function() {
+            const duration = parseFloat(document.getElementById('recordingDuration').value);
+            
+            if (!duration || duration <= 0) {
+                showStatusMessage('Please enter a valid recording duration.', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/start-recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ duration: duration })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatusMessage(result.message, 'success');
+                } else {
+                    showStatusMessage(result.message, 'error');
+                }
+            } catch (error) {
+                showStatusMessage('Error starting recording: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('stopRecording').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/stop-recording', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatusMessage(result.message, 'success');
+                } else {
+                    showStatusMessage(result.message, 'error');
+                }
+            } catch (error) {
+                showStatusMessage('Error stopping recording: ' + error.message, 'error');
+            }
+        });
+        
+        // Real-time data updates - optimized for maximum speed
+        socket.on('data_update', function(data) {
+            updateCount++;
+            const currentTime = Date.now();
+            
+            // Log update rate every 100 updates (about every 2 seconds at 50Hz)
+            if (updateCount % 100 === 0) {
+                const updateRate = 100000 / (currentTime - lastUpdateTime);
+                console.log(`Update rate: ${updateRate.toFixed(1)} Hz`);
+                lastUpdateTime = currentTime;
+            }
+            
+            try {
+                // Update recording status if available
+                if (data.recording_status) {
+                    updateRecordingUI(data.recording_status);
+                }
+                
+                // Update charts using streaming updates for better performance
+                if (data.lux_chart) {
+                    const luxData = JSON.parse(data.lux_chart);
+                    
+                    if (luxData && luxData.data && luxData.layout) {
+                        // Check if chart exists, if not create it, otherwise update
+                        const luxChartDiv = document.getElementById('luxChart');
+                        if (!luxChartDiv._fullLayout) {
+                            // Create new chart
+                            Plotly.newPlot('luxChart', luxData.data, luxData.layout, chartConfig);
+                        } else {
+                            // Update existing chart data for better performance
+                            const updateData = {
+                                x: [luxData.data[0].x],
+                                y: [luxData.data[0].y]
+                            };
+                            Plotly.restyle('luxChart', updateData, [0]);
+                        }
+                    }
+                }
+                
+                if (data.als_chart) {
+                    const alsData = JSON.parse(data.als_chart);
+                    
+                    if (alsData && alsData.data && alsData.layout) {
+                        // Check if chart exists, if not create it, otherwise update
+                        const alsChartDiv = document.getElementById('alsChart');
+                        if (!alsChartDiv._fullLayout) {
+                            // Create new chart
+                            Plotly.newPlot('alsChart', alsData.data, alsData.layout, chartConfig);
+                        } else {
+                            // Update existing chart data for better performance
+                            const updateData = {
+                                x: [alsData.data[0].x],
+                                y: [alsData.data[0].y]
+                            };
+                            Plotly.restyle('alsChart', updateData, [0]);
+                        }
+                    }
+                }
+                
+                // Update FFT charts
+                if (data.lux_fft_chart) {
+                    const luxFFTData = JSON.parse(data.lux_fft_chart);
+                    
+                    if (luxFFTData && luxFFTData.data && luxFFTData.layout) {
+                        Plotly.newPlot('luxFFTChart', luxFFTData.data, luxFFTData.layout, chartConfig);
+                    }
+                }
+                
+                if (data.als_fft_chart) {
+                    const alsFFTData = JSON.parse(data.als_fft_chart);
+                    
+                    if (alsFFTData && alsFFTData.data && alsFFTData.layout) {
+                        Plotly.newPlot('alsFFTChart', alsFFTData.data, alsFFTData.layout, chartConfig);
+                    }
+                }
+                
+                // Update analysis data
+                if (data.analysis) {
+                    updateAnalysis(data.analysis);
+                }
+            } catch (error) {
+                console.error('Error processing data update:', error);
+            }
+        });
+        
+        function updateAnalysis(analysis) {
+            try {
+                // Window 1
+                if (analysis.window_1) {
+                    document.getElementById('window1-size').textContent = analysis.window_1.size || 0;
+                    document.getElementById('window1-freq').textContent = (analysis.window_1.frequency || 0).toFixed(2) + ' Hz';
+                    document.getElementById('window1-period').textContent = ((analysis.window_1.period || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window1-duty').textContent = (analysis.window_1.duty_cycle || 0).toFixed(1) + '%';
+                    document.getElementById('window1-rise').textContent = ((analysis.window_1.rise_time || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window1-fall').textContent = ((analysis.window_1.fall_time || 0)).toFixed(2) + ' ms';
+                }
+                
+                // Window 2
+                if (analysis.window_2) {
+                    document.getElementById('window2-size').textContent = analysis.window_2.size || 0;
+                    document.getElementById('window2-freq').textContent = (analysis.window_2.frequency || 0).toFixed(2) + ' Hz';
+                    document.getElementById('window2-period').textContent = ((analysis.window_2.period || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window2-duty').textContent = (analysis.window_2.duty_cycle || 0).toFixed(1) + '%';
+                    document.getElementById('window2-rise').textContent = ((analysis.window_2.rise_time || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window2-fall').textContent = ((analysis.window_2.fall_time || 0)).toFixed(2) + ' ms';
+                }
+                
+                // Window 3
+                if (analysis.window_3) {
+                    document.getElementById('window3-size').textContent = analysis.window_3.size || 0;
+                    document.getElementById('window3-freq').textContent = (analysis.window_3.frequency || 0).toFixed(2) + ' Hz';
+                    document.getElementById('window3-period').textContent = ((analysis.window_3.period || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window3-duty').textContent = (analysis.window_3.duty_cycle || 0).toFixed(1) + '%';
+                    document.getElementById('window3-rise').textContent = ((analysis.window_3.rise_time || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window3-fall').textContent = ((analysis.window_3.fall_time || 0)).toFixed(2) + ' ms';
+                }
+                
+                console.log('Analysis data updated successfully');
+            } catch (error) {
+                console.error('Error updating analysis:', error);
+            }
+        }
+        
+        // Initial data fetch
+        fetch('/api/data')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Initial data received:', data);
+                if (data.analysis) {
+                    updateAnalysis(data.analysis);
+                }
+                
+                // Create initial empty charts if no data
+                if (!data.lux_values || data.lux_values.length === 0) {
+                    createEmptyCharts();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching initial data:', error);
+                createEmptyCharts();
+            });
+        
+        function createEmptyCharts() {
+            console.log('Creating empty charts...');
+            
+            // Empty Lux chart
+            const emptyLuxData = [{
+                x: [],
+                y: [],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Lux',
+                line: { color: '#1f77b4', width: 2 }
+            }];
+            
+            const emptyLuxLayout = getLayoutConfig('Light Intensity (Lux) - Waiting for data...', 'Time (ms)', 'Lux');
+            
+            Plotly.newPlot('luxChart', emptyLuxData, emptyLuxLayout, chartConfig);
+            
+            // Empty ALS chart
+            const emptyAlsData = [{
+                x: [],
+                y: [],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'ALS Raw',
+                line: { color: '#ff7f0e', width: 2 }
+            }];
+            
+            const emptyAlsLayout = getLayoutConfig('ALS Raw Values - Waiting for data...', 'Time (ms)', 'Raw Value');
+            
+            Plotly.newPlot('alsChart', emptyAlsData, emptyAlsLayout, chartConfig);
+            
+            // Empty Lux FFT chart
+            const emptyLuxFFTData = [{
+                x: [],
+                y: [],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Lux FFT',
+                line: { color: '#1f77b4', width: 2 }
+            }];
+            
+            const emptyLuxFFTLayout = getLayoutConfig('Light Intensity FFT - Waiting for data...', 'Frequency (Hz)', 'Magnitude (dB)');
+            emptyLuxFFTLayout.xaxis.range = [0, 70];
+            
+            Plotly.newPlot('luxFFTChart', emptyLuxFFTData, emptyLuxFFTLayout, chartConfig);
+            
+            // Empty ALS FFT chart
+            const emptyAlsFFTData = [{
+                x: [],
+                y: [],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'ALS FFT',
+                line: { color: '#ff7f0e', width: 2 }
+            }];
+            
+            const emptyAlsFFTLayout = getLayoutConfig('ALS Raw FFT - Waiting for data...', 'Frequency (Hz)', 'Magnitude (dB)');
+            emptyAlsFFTLayout.xaxis.range = [0, 70];
+            
+            Plotly.newPlot('alsFFTChart', emptyAlsFFTData, emptyAlsFFTLayout, chartConfig);
+            
+            console.log('Empty charts created');
+        }
+        
+        // Error handling for Plotly
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+        
+        // Add resize handler for responsive charts
+        window.addEventListener('resize', function() {
+            sidebarManager.resizeCharts();
+        });
+    </script>
+</body>
+</html>

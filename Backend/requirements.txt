@@ -1,0 +1,12 @@
+Flask
+Flask-SocketIO
+pyserial
+numpy
+scipy
+plotly
+python-socketio
+eventlet
+matplotlib
+reportlab
+Pillow
+pandas
