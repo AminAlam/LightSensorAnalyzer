@@ -1,10 +1,16 @@
-# 🌟 VEML6030 Light Sensor Analyzer
+# 💡 Light Sensor Analyzer
 
 A comprehensive real-time light sensor analysis system that connects to Arduino-based VEML6030 sensors, providing live monitoring, signal analysis, and automated PDF report generation.
 
 ![Python](https://img.shields.io/badge/python-v3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+
+## 📸 Interface Preview
+
+![Light Sensor Analyzer Interface](assets/screenshot.png)
+
+*Real-time light sensor monitoring with automated PDF report generation featuring a modern three-panel layout: report controls (left), live charts (center), and signal analysis (right).*
 
 ## ✨ Features
 
@@ -252,11 +258,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Plotly.js**: Interactive charting and visualization
 - **ReportLab**: Professional PDF generation
 - **SciPy**: Signal processing and analysis algorithms
-
-## 📞 Support
-
-- **Bug Reports**: [Issues Page](https://github.com/yourusername/veml6030-analyzer/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/veml6030-analyzer/discussions)
 
 ---
 
