@@ -103,7 +103,7 @@
         
         .charts-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 20px;
             height: calc(100vh - 140px);
@@ -521,7 +521,7 @@
         @media (max-width: 768px) {
             .charts-container {
                 grid-template-columns: 1fr;
-                grid-template-rows: repeat(4, 1fr);
+                grid-template-rows: repeat(6, 1fr);
                 height: auto;
             }
             
@@ -532,6 +532,121 @@
             .progress-info {
                 grid-template-columns: 1fr;
             }
+        }
+
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .charts-container {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr 1fr;
+            }
+        }
+
+        .window-size-toolbar {
+            background: linear-gradient(145deg, #e3f2fd, #bbdefb);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #2196f3;
+        }
+
+        .window-size-toolbar h3 {
+            color: #1976d2;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+            text-align: center;
+            border-bottom: 2px solid #2196f3;
+            padding-bottom: 8px;
+        }
+
+        .window-size-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .window-size-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 8px 12px;
+            background: linear-gradient(145deg, #ffffff, #f5f5f5);
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #666;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .window-size-btn:hover {
+            background: linear-gradient(145deg, #f0f7ff, #e3f2fd);
+            border-color: #2196f3;
+            color: #1976d2;
+            transform: translateY(-1px);
+        }
+
+        .window-size-btn.active {
+            background: linear-gradient(145deg, #2196f3, #1976d2);
+            border-color: #1565c0;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .custom-window-input {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .custom-window-input.show {
+            display: block;
+        }
+
+        .custom-window-input input {
+            width: 60px;
+            padding: 6px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .custom-window-input input:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        .analysis-window {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #dee2e6;
+        }
+        
+        .analysis-window h3 {
+            margin-top: 0;
+            color: #495057;
+            font-size: 1.1em;
+            border-bottom: 1px solid #007bff;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .window-badge {
+            background: linear-gradient(145deg, #007bff, #0056b3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -545,6 +660,17 @@
             
             <div class="header">
                 <h1>💡 Light Sensor Analyzer</h1>
+                <div style="margin: 8px 0;">
+                    <a href="https://github.com/AminAlam/LightSensorAnalyzer" target="_blank" rel="noopener noreferrer" 
+                       style="display: inline-flex; align-items: center; gap: 6px; color: #4299e1; text-decoration: none; font-size: 14px; font-weight: 500; background: rgba(66, 153, 225, 0.1); padding: 4px 12px; border-radius: 6px; transition: all 0.2s ease;"
+                       onmouseover="this.style.background='rgba(66, 153, 225, 0.2)'; this.style.transform='translateY(-1px)'"
+                       onmouseout="this.style.background='rgba(66, 153, 225, 0.1)'; this.style.transform='translateY(0)'">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                        View on GitHub
+                    </a>
+                </div>
                 <div id="status" class="status disconnected">
                     Connecting to sensor...
                 </div>
@@ -623,12 +749,22 @@
                     </div>
                 </div>
                 <div class="chart">
+                    <div id="photoresistorChart">
+                        <div class="loading"></div>
+                    </div>
+                </div>
+                <div class="chart">
                     <div id="luxFFTChart">
                         <div class="loading"></div>
                     </div>
                 </div>
                 <div class="chart">
                     <div id="alsFFTChart">
+                        <div class="loading"></div>
+                    </div>
+                </div>
+                <div class="chart">
+                    <div id="photoresistorFFTChart">
                         <div class="loading"></div>
                     </div>
                 </div>
@@ -641,90 +777,51 @@
                 ▶
             </button>
             
+            <div class="window-size-toolbar">
+                <h3>🎯 Analysis Window Size</h3>
+                <div class="window-size-buttons">
+                    <button class="window-size-btn active" data-size="2" onclick="selectWindowSize(2)">2s</button>
+                    <button class="window-size-btn" data-size="5" onclick="selectWindowSize(5)">5s</button>
+                    <button class="window-size-btn" data-size="10" onclick="selectWindowSize(10)">10s</button>
+                    <button class="window-size-btn" data-size="30" onclick="selectWindowSize(30)">30s</button>
+                    <button class="window-size-btn" data-size="60" onclick="selectWindowSize(60)">60s</button>
+                    <button class="window-size-btn" data-size="custom" onclick="selectWindowSize('custom')">Custom</button>
+                </div>
+                <div class="custom-window-input" id="customWindowInput">
+                    <label>Custom window (seconds): </label>
+                    <input type="number" id="customWindowValue" value="15" min="1" max="300" 
+                           onchange="applyCustomWindowSize()" onkeypress="handleCustomWindowKeypress(event)">
+                </div>
+            </div>
+            
             <div class="sidebar-section">
                 <h2>📈 Signal Analysis</h2>
                 
                 <div class="analysis-window">
-                    <h3>Short Term<span class="window-badge">2s</span></h3>
+                    <h3>Current Window<span class="window-badge" id="currentWindowBadge">2s</span></h3>
                     <div class="metric">
                         <span class="metric-label">Data Points:</span>
-                        <span class="metric-value data-size" id="window1-size">0</span>
+                        <span class="metric-value data-size" id="window-size">0</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Frequency:</span>
-                        <span class="metric-value frequency" id="window1-freq">0.00 Hz</span>
+                        <span class="metric-value frequency" id="window-freq">0.00 Hz</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Period:</span>
-                        <span class="metric-value frequency" id="window1-period">0.00 ms</span>
+                        <span class="metric-value frequency" id="window-period">0.00 ms</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Duty Cycle:</span>
-                        <span class="metric-value duty-cycle" id="window1-duty">0.00%</span>
+                        <span class="metric-value duty-cycle" id="window-duty">0.00%</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Rise Time:</span>
-                        <span class="metric-value timing" id="window1-rise">0.00 ms</span>
+                        <span class="metric-value timing" id="window-rise">0.00 ms</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Fall Time:</span>
-                        <span class="metric-value timing" id="window1-fall">0.00 ms</span>
-                    </div>
-                </div>
-                
-                <div class="analysis-window">
-                    <h3>Medium Term<span class="window-badge">10s</span></h3>
-                    <div class="metric">
-                        <span class="metric-label">Data Points:</span>
-                        <span class="metric-value data-size" id="window2-size">0</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Frequency:</span>
-                        <span class="metric-value frequency" id="window2-freq">0.00 Hz</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Period:</span>
-                        <span class="metric-value frequency" id="window2-period">0.00 ms</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Duty Cycle:</span>
-                        <span class="metric-value duty-cycle" id="window2-duty">0.00%</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Rise Time:</span>
-                        <span class="metric-value timing" id="window2-rise">0.00 ms</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Fall Time:</span>
-                        <span class="metric-value timing" id="window2-fall">0.00 ms</span>
-                    </div>
-                </div>
-                
-                <div class="analysis-window">
-                    <h3>Long Term<span class="window-badge">60s</span></h3>
-                    <div class="metric">
-                        <span class="metric-label">Data Points:</span>
-                        <span class="metric-value data-size" id="window3-size">0</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Frequency:</span>
-                        <span class="metric-value frequency" id="window3-freq">0.00 Hz</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Period:</span>
-                        <span class="metric-value frequency" id="window3-period">0.00 ms</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Duty Cycle:</span>
-                        <span class="metric-value duty-cycle" id="window3-duty">0.00%</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Rise Time:</span>
-                        <span class="metric-value timing" id="window3-rise">0.00 ms</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Fall Time:</span>
-                        <span class="metric-value timing" id="window3-fall">0.00 ms</span>
+                        <span class="metric-value timing" id="window-fall">0.00 ms</span>
                     </div>
                 </div>
             </div>
@@ -868,11 +965,17 @@
                     if (document.getElementById('alsChart')._fullLayout) {
                         Plotly.Plots.resize('alsChart');
                     }
+                    if (document.getElementById('photoresistorChart')._fullLayout) {
+                        Plotly.Plots.resize('photoresistorChart');
+                    }
                     if (document.getElementById('luxFFTChart')._fullLayout) {
                         Plotly.Plots.resize('luxFFTChart');
                     }
                     if (document.getElementById('alsFFTChart')._fullLayout) {
                         Plotly.Plots.resize('alsFFTChart');
+                    }
+                    if (document.getElementById('photoresistorFFTChart')._fullLayout) {
+                        Plotly.Plots.resize('photoresistorFFTChart');
                     }
                 } catch (error) {
                     console.log('Charts not yet initialized for resize');
@@ -1077,7 +1180,7 @@
             updateCount++;
             const currentTime = Date.now();
             
-            // Log update rate every 100 updates (about every 2 seconds at 50Hz)
+            // Log update rate every 100 updates (about every 10 seconds at 10Hz)
             if (updateCount % 100 === 0) {
                 const updateRate = 100000 / (currentTime - lastUpdateTime);
                 console.log(`Update rate: ${updateRate.toFixed(1)} Hz`);
@@ -1085,108 +1188,239 @@
             }
             
             try {
+                // Handle errors from the backend
+                if (data.error) {
+                    console.error('Backend error:', data.error);
+                    if (data.message) {
+                        console.error('Error details:', data.message);
+                    }
+                    return;
+                }
+                
                 // Update recording status if available
                 if (data.recording_status) {
                     updateRecordingUI(data.recording_status);
-                }
-                
-                // Update charts using streaming updates for better performance
-                if (data.lux_chart) {
-                    const luxData = JSON.parse(data.lux_chart);
-                    
-                    if (luxData && luxData.data && luxData.layout) {
-                        // Check if chart exists, if not create it, otherwise update
-                        const luxChartDiv = document.getElementById('luxChart');
-                        if (!luxChartDiv._fullLayout) {
-                            // Create new chart
-                            Plotly.newPlot('luxChart', luxData.data, luxData.layout, chartConfig);
-                        } else {
-                            // Update existing chart data for better performance
-                            const updateData = {
-                                x: [luxData.data[0].x],
-                                y: [luxData.data[0].y]
-                            };
-                            Plotly.restyle('luxChart', updateData, [0]);
-                        }
-                    }
-                }
-                
-                if (data.als_chart) {
-                    const alsData = JSON.parse(data.als_chart);
-                    
-                    if (alsData && alsData.data && alsData.layout) {
-                        // Check if chart exists, if not create it, otherwise update
-                        const alsChartDiv = document.getElementById('alsChart');
-                        if (!alsChartDiv._fullLayout) {
-                            // Create new chart
-                            Plotly.newPlot('alsChart', alsData.data, alsData.layout, chartConfig);
-                        } else {
-                            // Update existing chart data for better performance
-                            const updateData = {
-                                x: [alsData.data[0].x],
-                                y: [alsData.data[0].y]
-                            };
-                            Plotly.restyle('alsChart', updateData, [0]);
-                        }
-                    }
-                }
-                
-                // Update FFT charts
-                if (data.lux_fft_chart) {
-                    const luxFFTData = JSON.parse(data.lux_fft_chart);
-                    
-                    if (luxFFTData && luxFFTData.data && luxFFTData.layout) {
-                        Plotly.newPlot('luxFFTChart', luxFFTData.data, luxFFTData.layout, chartConfig);
-                    }
-                }
-                
-                if (data.als_fft_chart) {
-                    const alsFFTData = JSON.parse(data.als_fft_chart);
-                    
-                    if (alsFFTData && alsFFTData.data && alsFFTData.layout) {
-                        Plotly.newPlot('alsFFTChart', alsFFTData.data, alsFFTData.layout, chartConfig);
-                    }
                 }
                 
                 // Update analysis data
                 if (data.analysis) {
                     updateAnalysis(data.analysis);
                 }
+                
+                // Fetch chart data separately if signaled
+                if (data.update_charts) {
+                    fetchAndUpdateCharts();
+                }
             } catch (error) {
                 console.error('Error processing data update:', error);
             }
         });
         
+        // Listen for immediate recording status updates
+        socket.on('recording_status', function(status) {
+            console.log('Immediate recording status update:', status);
+            updateRecordingUI(status);
+        });
+        
+        // Listen for immediate report status updates
+        socket.on('report_status', function(status) {
+            console.log('Immediate report status update:', status);
+            
+            // Check if report is ready and hasn't been downloaded yet
+            if (status.report_ready && status.report_filename && !reportDownloaded) {
+                reportDownloaded = true;
+                
+                showStatusMessage(`Report generated successfully! Downloading: ${status.report_filename}`, 'success');
+                
+                // Automatically trigger download
+                const downloadLink = document.createElement('a');
+                downloadLink.href = `/api/download-report/${status.report_filename}`;
+                downloadLink.download = status.report_filename;
+                downloadLink.style.display = 'none';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                console.log(`Report automatically downloaded via immediate update: ${status.report_filename}`);
+            }
+        });
+        
+        // Function to fetch chart data separately via HTTP
+        async function fetchAndUpdateCharts() {
+            try {
+                console.log('Fetching chart data...');
+                const response = await fetch('/api/chart-data');
+                const chartData = await response.json();
+                
+                if (chartData.error) {
+                    console.error('Chart data error:', chartData.error);
+                    return;
+                }
+                
+                console.log('Chart data received:', {
+                    timestamps: chartData.timestamps ? chartData.timestamps.length : 0,
+                    lux_values: chartData.lux_values ? chartData.lux_values.length : 0,
+                    als_values: chartData.als_values ? chartData.als_values.length : 0,
+                    photoresistor_values: chartData.photoresistor_values ? chartData.photoresistor_values.length : 0,
+                    lux_fft: chartData.lux_fft ? chartData.lux_fft.frequencies.length : 0,
+                    als_fft: chartData.als_fft ? chartData.als_fft.frequencies.length : 0,
+                    photoresistor_fft: chartData.photoresistor_fft ? chartData.photoresistor_fft.frequencies.length : 0
+                });
+                
+                // Update charts from raw data
+                if (chartData.timestamps && chartData.lux_values && chartData.als_values && chartData.photoresistor_values) {
+                    updateChartsFromRawData(chartData.timestamps, chartData.lux_values, chartData.als_values, chartData.photoresistor_values);
+                } else {
+                    console.warn('Missing chart data:', {
+                        timestamps: !!chartData.timestamps,
+                        lux_values: !!chartData.lux_values,
+                        als_values: !!chartData.als_values,
+                        photoresistor_values: !!chartData.photoresistor_values
+                    });
+                }
+                
+                // Update FFT charts from FFT data
+                if (chartData.lux_fft && chartData.als_fft && chartData.photoresistor_fft) {
+                    updateFFTCharts(chartData.lux_fft, chartData.als_fft, chartData.photoresistor_fft);
+                } else {
+                    console.warn('Missing FFT data:', {
+                        lux_fft: !!chartData.lux_fft,
+                        als_fft: !!chartData.als_fft,
+                        photoresistor_fft: !!chartData.photoresistor_fft
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching chart data:', error);
+            }
+        }
+        
+        function updateChartsFromRawData(timestamps, luxValues, alsValues, photoresistorValues) {
+            try {
+                console.log('Updating charts with data points:', timestamps.length);
+                
+                // Update Lux chart
+                const luxChartDiv = document.getElementById('luxChart');
+                const luxData = [{
+                    x: timestamps,
+                    y: luxValues,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Lux',
+                    line: { color: '#1f77b4', width: 2 }
+                }];
+                const luxLayout = getLayoutConfig('Light Intensity (Lux)', 'Time (ms)', 'Lux');
+                Plotly.newPlot('luxChart', luxData, luxLayout, chartConfig);
+                
+                // Update ALS chart
+                const alsChartDiv = document.getElementById('alsChart');
+                const alsData = [{
+                    x: timestamps,
+                    y: alsValues,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'ALS Raw',
+                    line: { color: '#ff7f0e', width: 2 }
+                }];
+                const alsLayout = getLayoutConfig('ALS Raw Values', 'Time (ms)', 'Raw Value');
+                Plotly.newPlot('alsChart', alsData, alsLayout, chartConfig);
+                
+                // Update Photoresistor chart
+                const photoresistorChartDiv = document.getElementById('photoresistorChart');
+                const photoresistorData = [{
+                    x: timestamps,
+                    y: photoresistorValues,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Photoresistor',
+                    line: { color: '#2ca02c', width: 2 }
+                }];
+                const photoresistorLayout = getLayoutConfig('Photoresistor Signal', 'Time (ms)', 'Raw Value');
+                Plotly.newPlot('photoresistorChart', photoresistorData, photoresistorLayout, chartConfig);
+                
+                console.log('Charts updated successfully');
+            } catch (error) {
+                console.error('Error updating charts from raw data:', error);
+            }
+        }
+        
+        function updateFFTCharts(luxFFT, alsFFT, photoresistorFFT) {
+            try {
+                // Update Lux FFT chart
+                if (luxFFT.frequencies && luxFFT.magnitude && luxFFT.frequencies.length > 0) {
+                    const luxFFTData = [{
+                        x: luxFFT.frequencies,
+                        y: luxFFT.magnitude,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'LUX FFT',
+                        line: { color: '#1f77b4', width: 2 }
+                    }];
+                    const luxFFTLayout = getLayoutConfig('LUX FFT Analysis', 'Frequency (Hz)', 'Magnitude (dB)');
+                    // Set a reasonable frequency range (0 to 100 Hz for light analysis)
+                    const maxFreq = Math.max(...luxFFT.frequencies);
+                    luxFFTLayout.xaxis.range = [0, Math.min(maxFreq, 100)];
+                    Plotly.newPlot('luxFFTChart', luxFFTData, luxFFTLayout, chartConfig);
+                }
+                
+                // Update ALS FFT chart
+                if (alsFFT.frequencies && alsFFT.magnitude && alsFFT.frequencies.length > 0) {
+                    const alsFFTData = [{
+                        x: alsFFT.frequencies,
+                        y: alsFFT.magnitude,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'ALS FFT',
+                        line: { color: '#ff7f0e', width: 2 }
+                    }];
+                    const alsFFTLayout = getLayoutConfig('ALS FFT Analysis', 'Frequency (Hz)', 'Magnitude (dB)');
+                    // Set a reasonable frequency range (0 to 100 Hz for light analysis)
+                    const maxFreq = Math.max(...alsFFT.frequencies);
+                    alsFFTLayout.xaxis.range = [0, Math.min(maxFreq, 100)];
+                    Plotly.newPlot('alsFFTChart', alsFFTData, alsFFTLayout, chartConfig);
+                }
+                
+                // Update Photoresistor FFT chart
+                if (photoresistorFFT.frequencies && photoresistorFFT.magnitude && photoresistorFFT.frequencies.length > 0) {
+                    const photoresistorFFTData = [{
+                        x: photoresistorFFT.frequencies,
+                        y: photoresistorFFT.magnitude,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Photoresistor FFT',
+                        line: { color: '#2ca02c', width: 2 }
+                    }];
+                    const photoresistorFFTLayout = getLayoutConfig('Photoresistor FFT Analysis', 'Frequency (Hz)', 'Magnitude (dB)');
+                    // Set a reasonable frequency range (0 to 100 Hz for light analysis)
+                    const maxFreq = Math.max(...photoresistorFFT.frequencies);
+                    photoresistorFFTLayout.xaxis.range = [0, Math.min(maxFreq, 100)];
+                    Plotly.newPlot('photoresistorFFTChart', photoresistorFFTData, photoresistorFFTLayout, chartConfig);
+                }
+            } catch (error) {
+                console.error('Error updating FFT charts:', error);
+            }
+        }
+        
         function updateAnalysis(analysis) {
             try {
-                // Window 1
-                if (analysis.window_1) {
-                    document.getElementById('window1-size').textContent = analysis.window_1.size || 0;
-                    document.getElementById('window1-freq').textContent = (analysis.window_1.frequency || 0).toFixed(2) + ' Hz';
-                    document.getElementById('window1-period').textContent = ((analysis.window_1.period || 0)).toFixed(2) + ' ms';
-                    document.getElementById('window1-duty').textContent = (analysis.window_1.duty_cycle || 0).toFixed(1) + '%';
-                    document.getElementById('window1-rise').textContent = ((analysis.window_1.rise_time || 0)).toFixed(2) + ' ms';
-                    document.getElementById('window1-fall').textContent = ((analysis.window_1.fall_time || 0)).toFixed(2) + ' ms';
+                // Use the current selected window size to determine which window data to show
+                const currentWindowSize = getCurrentWindowSize();
+                let windowData = null;
+                
+                // Select the appropriate window data based on current selection
+                if (analysis.current_window) {
+                    windowData = analysis.current_window;
+                } else {
+                    // Fallback to window_1 if no current_window data
+                    windowData = analysis.window_1;
                 }
                 
-                // Window 2
-                if (analysis.window_2) {
-                    document.getElementById('window2-size').textContent = analysis.window_2.size || 0;
-                    document.getElementById('window2-freq').textContent = (analysis.window_2.frequency || 0).toFixed(2) + ' Hz';
-                    document.getElementById('window2-period').textContent = ((analysis.window_2.period || 0)).toFixed(2) + ' ms';
-                    document.getElementById('window2-duty').textContent = (analysis.window_2.duty_cycle || 0).toFixed(1) + '%';
-                    document.getElementById('window2-rise').textContent = ((analysis.window_2.rise_time || 0)).toFixed(2) + ' ms';
-                    document.getElementById('window2-fall').textContent = ((analysis.window_2.fall_time || 0)).toFixed(2) + ' ms';
-                }
-                
-                // Window 3
-                if (analysis.window_3) {
-                    document.getElementById('window3-size').textContent = analysis.window_3.size || 0;
-                    document.getElementById('window3-freq').textContent = (analysis.window_3.frequency || 0).toFixed(2) + ' Hz';
-                    document.getElementById('window3-period').textContent = ((analysis.window_3.period || 0)).toFixed(2) + ' ms';
-                    document.getElementById('window3-duty').textContent = (analysis.window_3.duty_cycle || 0).toFixed(1) + '%';
-                    document.getElementById('window3-rise').textContent = ((analysis.window_3.rise_time || 0)).toFixed(2) + ' ms';
-                    document.getElementById('window3-fall').textContent = ((analysis.window_3.fall_time || 0)).toFixed(2) + ' ms';
+                if (windowData) {
+                    document.getElementById('window-size').textContent = windowData.size || 0;
+                    document.getElementById('window-freq').textContent = (windowData.frequency || 0).toFixed(2) + ' Hz';
+                    document.getElementById('window-period').textContent = ((windowData.period || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window-duty').textContent = (windowData.duty_cycle || 0).toFixed(1) + '%';
+                    document.getElementById('window-rise').textContent = ((windowData.rise_time || 0)).toFixed(2) + ' ms';
+                    document.getElementById('window-fall').textContent = ((windowData.fall_time || 0)).toFixed(2) + ' ms';
                 }
                 
                 console.log('Analysis data updated successfully');
@@ -1195,7 +1429,107 @@
             }
         }
         
-        // Initial data fetch
+        // Global variable to track current window size
+        let currentWindowSizeSeconds = 2;
+
+        function getCurrentWindowSize() {
+            return currentWindowSizeSeconds;
+        }
+
+        function selectWindowSize(size) {
+            try {
+                // Remove active class from all buttons
+                document.querySelectorAll('.window-size-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // Handle custom window size
+                if (size === 'custom') {
+                    document.querySelector('[data-size="custom"]').classList.add('active');
+                    document.getElementById('customWindowInput').classList.add('show');
+                    // Don't update window size yet, wait for user input
+                    return;
+                } else {
+                    // Hide custom input
+                    document.getElementById('customWindowInput').classList.remove('show');
+                    
+                    // Set active button
+                    document.querySelector(`[data-size="${size}"]`).classList.add('active');
+                    
+                    // Update current window size
+                    currentWindowSizeSeconds = parseInt(size);
+                }
+
+                // Update the badge display
+                updateWindowBadge(currentWindowSizeSeconds);
+
+                // Notify the backend about the window size change
+                updateBackendWindowSize(currentWindowSizeSeconds);
+
+                console.log(`Window size changed to: ${currentWindowSizeSeconds}s`);
+            } catch (error) {
+                console.error('Error selecting window size:', error);
+            }
+        }
+
+        function applyCustomWindowSize() {
+            try {
+                const customValue = parseInt(document.getElementById('customWindowValue').value);
+                if (customValue && customValue >= 1 && customValue <= 300) {
+                    currentWindowSizeSeconds = customValue;
+                    updateWindowBadge(currentWindowSizeSeconds);
+                    updateBackendWindowSize(currentWindowSizeSeconds);
+                    console.log(`Custom window size set to: ${currentWindowSizeSeconds}s`);
+                } else {
+                    alert('Please enter a valid window size between 1 and 300 seconds.');
+                }
+            } catch (error) {
+                console.error('Error applying custom window size:', error);
+            }
+        }
+
+        function handleCustomWindowKeypress(event) {
+            if (event.key === 'Enter') {
+                applyCustomWindowSize();
+            }
+        }
+
+        function updateWindowBadge(size) {
+            document.getElementById('currentWindowBadge').textContent = `${size}s`;
+        }
+
+        function updateBackendWindowSize(size) {
+            // Send the new window size to the backend
+            fetch('/api/set-window-size', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    window_size: size
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Backend window size updated successfully');
+                } else {
+                    console.error('Failed to update backend window size:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating backend window size:', error);
+            });
+        }
+        
+        // Initial data fetch and periodic chart updates
+        fetchAndUpdateCharts(); // Initial fetch
+        
+        // Set up periodic chart updates (every 2 seconds)
+        setInterval(() => {
+            fetchAndUpdateCharts();
+        }, 2000);
+        
         fetch('/api/data')
             .then(response => {
                 if (!response.ok) {
@@ -1209,10 +1543,8 @@
                     updateAnalysis(data.analysis);
                 }
                 
-                // Create initial empty charts if no data
-                if (!data.lux_values || data.lux_values.length === 0) {
-                    createEmptyCharts();
-                }
+                // Fetch chart data immediately after initial load
+                fetchAndUpdateCharts();
             })
             .catch(error => {
                 console.error('Error fetching initial data:', error);
@@ -1250,6 +1582,20 @@
             
             Plotly.newPlot('alsChart', emptyAlsData, emptyAlsLayout, chartConfig);
             
+            // Empty Photoresistor chart
+            const emptyPhotoresistorData = [{
+                x: [],
+                y: [],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Photoresistor',
+                line: { color: '#2ca02c', width: 2 }
+            }];
+            
+            const emptyPhotoresistorLayout = getLayoutConfig('Photoresistor Signal - Waiting for data...', 'Time (ms)', 'Raw Value');
+            
+            Plotly.newPlot('photoresistorChart', emptyPhotoresistorData, emptyPhotoresistorLayout, chartConfig);
+            
             // Empty Lux FFT chart
             const emptyLuxFFTData = [{
                 x: [],
@@ -1279,6 +1625,21 @@
             emptyAlsFFTLayout.xaxis.range = [0, 70];
             
             Plotly.newPlot('alsFFTChart', emptyAlsFFTData, emptyAlsFFTLayout, chartConfig);
+            
+            // Empty Photoresistor FFT chart
+            const emptyPhotoresistorFFTData = [{
+                x: [],
+                y: [],
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Photoresistor FFT',
+                line: { color: '#2ca02c', width: 2 }
+            }];
+            
+            const emptyPhotoresistorFFTLayout = getLayoutConfig('Photoresistor FFT - Waiting for data...', 'Frequency (Hz)', 'Magnitude (dB)');
+            emptyPhotoresistorFFTLayout.xaxis.range = [0, 70];
+            
+            Plotly.newPlot('photoresistorFFTChart', emptyPhotoresistorFFTData, emptyPhotoresistorFFTLayout, chartConfig);
             
             console.log('Empty charts created');
         }
