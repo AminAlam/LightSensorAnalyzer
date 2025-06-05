@@ -191,48 +191,33 @@ class LightSensorAnalyzer:
         data_norm = (data - np.min(data)) / (np.max(data) - np.min(data))
         
         # Find peaks with minimum height and distance requirements
-        peaks_indices, _ = signal.find_peaks(data_norm, 
-                                           height=0.5,  # Only consider peaks above 50% of range
-                                           distance=len(data)//10)  # Minimum distance between peaks
+        pos_peaks_indices, _ = signal.find_peaks(data_norm)
+        neg_peaks_indices, _ = signal.find_peaks(-data_norm)
         
-        if len(peaks_indices) < 2:  # Need at least 2 peaks for meaningful measurement
+        if len(pos_peaks_indices) < 2 or len(neg_peaks_indices) < 2:  # Need at least 2 peaks for meaningful measurement
             return 0, 0
             
         rise_times = []
         fall_times = []
         
-        for peak_idx in peaks_indices:
-            # Get the signal segment before the peak
-            pre_peak = data_norm[:peak_idx]
-            # Get the signal segment after the peak
-            post_peak = data_norm[peak_idx:]
-            
-            # Find 10% and 90% levels for this peak
-            peak_value = data_norm[peak_idx]
-            level_10 = peak_value * 0.1
-            level_90 = peak_value * 0.9
-            
-            # Find rise time (time from 10% to 90% of peak)
-            try:
-                # Find last crossing of 10% level before peak
-                rise_start = np.where(pre_peak <= level_10)[0][-1]
-                # Find first crossing of 90% level before peak
-                rise_end = np.where(pre_peak >= level_90)[0][-1]
-                rise_time = (rise_end - rise_start) / self.sampling_rate
-                rise_times.append(rise_time)
-            except IndexError:
+        for peak_idx in pos_peaks_indices:
+
+            # find closest negative peak to this peak which is before the peak
+            neg_peaks_indices_pre_pos_peak = neg_peaks_indices[neg_peaks_indices <= peak_idx]
+            neg_peaks_indices_post_pos_peak = neg_peaks_indices[neg_peaks_indices >= peak_idx]
+            if len(neg_peaks_indices_pre_pos_peak) == 0 or len(neg_peaks_indices_post_pos_peak) == 0:
                 continue
-                
-            # Find fall time (time from 90% to 10% of peak)
-            try:
-                # Find first crossing of 90% level after peak
-                fall_start = np.where(post_peak <= level_90)[0][0]
-                # Find first crossing of 10% level after peak
-                fall_end = np.where(post_peak <= level_10)[0][0]
-                fall_time = (fall_end - fall_start) / self.sampling_rate
-                fall_times.append(fall_time)
-            except IndexError:
+            closest_pre_neg_peak_idx = neg_peaks_indices_pre_pos_peak[-1]
+            closest_post_neg_peak_idx = neg_peaks_indices_post_pos_peak[0]
+
+            if closest_pre_neg_peak_idx is None or closest_post_neg_peak_idx is None:
                 continue
+
+            rise_time = (peak_idx - closest_pre_neg_peak_idx) / self.sampling_rate
+            fall_time = (closest_post_neg_peak_idx - peak_idx) / self.sampling_rate
+            rise_times.append(rise_time)
+            fall_times.append(fall_time)
+            
 
         # Calculate mean times, handling empty lists
         rise_time = np.mean(rise_times) * 1000 if rise_times else 0  # convert to ms

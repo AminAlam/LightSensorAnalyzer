@@ -3,3 +3,4 @@ reports
 __pycache__
 data
 recording_data
+*.csv

@@ -416,11 +416,10 @@ class ReportGenerator:
             data_norm = (data - np.min(data)) / (np.max(data) - np.min(data))
             
             # Find peaks with minimum height and distance requirements
-            peaks_indices, _ = signal.find_peaks(data_norm, 
-                                               height=0.3,  # Lower threshold for more peaks
-                                               distance=len(data)//20)  # Allow more peaks
+            pos_peaks_indices, _ = signal.find_peaks(data_norm)
+            neg_peaks_indices, _ = signal.find_peaks(-data_norm)
             
-            if len(peaks_indices) < 2:
+            if len(pos_peaks_indices) < 2 or len(neg_peaks_indices) < 2:
                 return [], [], []
                 
             individual_rise_times = []
@@ -428,42 +427,34 @@ class ReportGenerator:
             individual_duty_cycles = []
             
             # Calculate individual rise and fall times for each peak
-            for peak_idx in peaks_indices:
-                # Get the signal segment before the peak
-                pre_peak = data_norm[:peak_idx]
-                # Get the signal segment after the peak
-                post_peak = data_norm[peak_idx:]
+            for peak_idx in pos_peaks_indices:
+                # Find closest negative peaks before and after this peak
+                neg_peaks_indices_pre_pos_peak = neg_peaks_indices[neg_peaks_indices <= peak_idx]
+                neg_peaks_indices_post_pos_peak = neg_peaks_indices[neg_peaks_indices >= peak_idx]
                 
-                # Find 10% and 90% levels for this peak
-                peak_value = data_norm[peak_idx]
-                level_10 = peak_value * 0.1
-                level_90 = peak_value * 0.9
-                
-                # Find rise time (time from 10% to 90% of peak)
-                try:
-                    rise_start = np.where(pre_peak <= level_10)[0][-1]
-                    rise_end = np.where(pre_peak >= level_90)[0][-1]
-                    rise_time = (rise_end - rise_start) / self.analyzer.sampling_rate * 1000  # ms
-                    if rise_time > 0:
-                        individual_rise_times.append(rise_time)
-                except IndexError:
+                if len(neg_peaks_indices_pre_pos_peak) == 0 or len(neg_peaks_indices_post_pos_peak) == 0:
                     continue
                     
-                # Find fall time (time from 90% to 10% of peak)
-                try:
-                    fall_start = np.where(post_peak <= level_90)[0][0]
-                    fall_end = np.where(post_peak <= level_10)[0][0]
-                    fall_time = (fall_end - fall_start) / self.analyzer.sampling_rate * 1000  # ms
-                    if fall_time > 0:
-                        individual_fall_times.append(fall_time)
-                except IndexError:
+                closest_pre_neg_peak_idx = neg_peaks_indices_pre_pos_peak[-1]
+                closest_post_neg_peak_idx = neg_peaks_indices_post_pos_peak[0]
+                
+                if closest_pre_neg_peak_idx is None or closest_post_neg_peak_idx is None:
                     continue
+                
+                # Calculate rise and fall times
+                rise_time = (peak_idx - closest_pre_neg_peak_idx) / self.analyzer.sampling_rate * 1000  # ms
+                fall_time = (closest_post_neg_peak_idx - peak_idx) / self.analyzer.sampling_rate * 1000  # ms
+                
+                if rise_time > 0:
+                    individual_rise_times.append(rise_time)
+                if fall_time > 0:
+                    individual_fall_times.append(fall_time)
             
             # Calculate duty cycle for each period between consecutive peaks
-            for i in range(len(peaks_indices) - 1):
+            for i in range(len(pos_peaks_indices) - 1):
                 try:
-                    period_start = peaks_indices[i]
-                    period_end = peaks_indices[i + 1]
+                    period_start = pos_peaks_indices[i]
+                    period_end = pos_peaks_indices[i + 1]
                     period_data = data_norm[period_start:period_end]
                     
                     if len(period_data) > 10:
@@ -544,6 +535,8 @@ class ReportGenerator:
         all_chunk_frequencies = []
         all_lux_values = []
         all_als_values = []
+
+
         
         # Process chunks
         if self.enable_multithreading and len(chunk_infos) > 1:
@@ -584,20 +577,15 @@ class ReportGenerator:
                             photoresistor_min = min(photoresistor_min, chunk_result['photoresistor_min'])
                             photoresistor_max = max(photoresistor_max, chunk_result['photoresistor_max'])
                             
-                            # Advanced metrics (only for photoresistor - only include non-zero values)
-                            if chunk_result['photoresistor_freq'] > 0:
-                                photoresistor_frequencies.append(chunk_result['photoresistor_freq'])
-                                all_chunk_frequencies.append(chunk_result['photoresistor_freq'])
-                            if chunk_result['photoresistor_duty'] > 0:
-                                photoresistor_duty_cycles.append(chunk_result['photoresistor_duty'])
-                            if chunk_result['photoresistor_period'] > 0:
-                                photoresistor_periods.append(chunk_result['photoresistor_period'])
-                            if chunk_result['photoresistor_rise'] > 0:
-                                photoresistor_rise_times.append(chunk_result['photoresistor_rise'])
-                            if chunk_result['photoresistor_fall'] > 0:
-                                photoresistor_fall_times.append(chunk_result['photoresistor_fall'])
+                            # Advanced metrics (only for photoresistor - collect individual values properly)
+                            photoresistor_frequencies.append(chunk_result['photoresistor_freq'])
+                            all_chunk_frequencies.append(chunk_result['photoresistor_freq'])
+                            photoresistor_duty_cycles.extend(chunk_result['individual_duty_cycles'])
+                            photoresistor_periods.append(chunk_result['photoresistor_period'])
+                            photoresistor_rise_times.extend(chunk_result['individual_rise_times'])
+                            photoresistor_fall_times.extend(chunk_result['individual_fall_times'])
                             
-                            # Collect individual measurements for histograms
+                            # Collect individual measurements for histograms (extend, not append)
                             all_individual_rise_times.extend(chunk_result['individual_rise_times'])
                             all_individual_fall_times.extend(chunk_result['individual_fall_times'])
                             all_individual_duty_cycles.extend(chunk_result['individual_duty_cycles'])
@@ -644,17 +632,12 @@ class ReportGenerator:
                     photoresistor_max = max(photoresistor_max, chunk_result['photoresistor_max'])
                     
                     # Advanced metrics aggregation (photoresistor only)
-                    if chunk_result['photoresistor_freq'] > 0:
-                        photoresistor_frequencies.append(chunk_result['photoresistor_freq'])
-                        all_chunk_frequencies.append(chunk_result['photoresistor_freq'])
-                    if chunk_result['photoresistor_duty'] > 0:
-                        photoresistor_duty_cycles.append(chunk_result['photoresistor_duty'])
-                    if chunk_result['photoresistor_period'] > 0:
-                        photoresistor_periods.append(chunk_result['photoresistor_period'])
-                    if chunk_result['photoresistor_rise'] > 0:
-                        photoresistor_rise_times.append(chunk_result['photoresistor_rise'])
-                    if chunk_result['photoresistor_fall'] > 0:
-                        photoresistor_fall_times.append(chunk_result['photoresistor_fall'])
+                    photoresistor_frequencies.append(chunk_result['photoresistor_freq'])
+                    all_chunk_frequencies.append(chunk_result['photoresistor_freq'])
+                    photoresistor_duty_cycles.extend(chunk_result['individual_duty_cycles'])
+                    photoresistor_periods.append(chunk_result['photoresistor_period'])
+                    photoresistor_rise_times.extend(chunk_result['individual_rise_times'])
+                    photoresistor_fall_times.extend(chunk_result['individual_fall_times'])
                     
                     # Collect individual measurements for histograms
                     all_individual_rise_times.extend(chunk_result['individual_rise_times'])
@@ -711,27 +694,24 @@ class ReportGenerator:
             'individual_duty_cycles': all_individual_duty_cycles,
             'chunk_frequencies': all_chunk_frequencies,
             'raw_lux_values': all_lux_values,
-            'raw_als_values': all_als_values
+            'raw_als_values': all_als_values,
+            'photoresistor_period_mean': np.mean(photoresistor_periods),
+            'photoresistor_period_std': np.std(photoresistor_periods),
+            'photoresistor_freq_mean': np.mean(photoresistor_frequencies),
+            'photoresistor_freq_std': np.std(photoresistor_frequencies),
+            'photoresistor_duty_mean': np.mean(photoresistor_duty_cycles),
+            'photoresistor_duty_std': np.std(photoresistor_duty_cycles),
+            'photoresistor_rise_mean': np.mean(photoresistor_rise_times),
+            'photoresistor_rise_std': np.std(photoresistor_rise_times),
+            'photoresistor_fall_mean': np.mean(photoresistor_fall_times),
+            'photoresistor_fall_std': np.std(photoresistor_fall_times)
         }
-        
-        # Advanced metrics (with error handling for empty lists) - only for photoresistor
-        for metric_name, values in [
-            ('photoresistor_freq', photoresistor_frequencies),
-            ('photoresistor_duty', photoresistor_duty_cycles),
-            ('photoresistor_period', photoresistor_periods),
-            ('photoresistor_rise', photoresistor_rise_times),
-            ('photoresistor_fall', photoresistor_fall_times)
-        ]:
-            if values:
-                stats[f'{metric_name}_mean'] = np.mean(values)
-                stats[f'{metric_name}_std'] = np.std(values)
-            else:
-                stats[f'{metric_name}_mean'] = 0
-                stats[f'{metric_name}_std'] = 0
         
         processing_mode = "multithreaded" if self.enable_multithreading and len(chunk_infos) > 1 else "single-threaded"
         print(f"Statistics calculation completed for {total_processed_samples} samples using {processing_mode} processing")
-        print(f"Collected {len(all_individual_rise_times)} rise times, {len(all_individual_fall_times)} fall times, {len(all_individual_duty_cycles)} duty cycles for histograms")
+        print(f"Individual measurements collected: rise={len(all_individual_rise_times)}, fall={len(all_individual_fall_times)}, duty={len(all_individual_duty_cycles)}")
+        print(f"Chunk-level statistics collected: freq={len(photoresistor_frequencies)}, period={len(photoresistor_periods)}")
+        print(f"Note: rise/fall/duty statistics use individual measurements, freq/period use chunk averages")
         return stats
 
     def _create_analysis_table(self):
@@ -883,9 +863,10 @@ class ReportGenerator:
             
             # Get period statistics if available from the last analysis
             period_stats = getattr(self, '_last_period_stats', {})
-            total_periods = period_stats.get('total_periods', 0)
-            mean_period_ms = period_stats.get('mean_period_length_ms', 0)
-            std_period_ms = period_stats.get('std_period_length_ms', 0)
+
+            total_periods = period_stats.get('total_cycles', 0)
+            mean_period_ms = period_stats.get('mean_cycle_length_ms', 0)
+            std_period_ms = period_stats.get('std_cycle_length_ms', 0)
             mean_amplitude = period_stats.get('mean_amplitude', 0)
             std_amplitude = period_stats.get('std_amplitude', 0)
             
@@ -1330,10 +1311,10 @@ class ReportGenerator:
             cycle_lengths = []
             
             # Process each cycle (from one positive-going zero crossing to the next)
-            for i in range(0, len(peaks) - 2, 2):
+            for i in range(0, len(peaks) - 1, 1):
                     
                 start_idx = peaks[i]
-                end_idx = peaks[i + 2]
+                end_idx = peaks[i + 1]
                 cycle_data = data_array[start_idx:end_idx]
                 
                 # Validate cycle
