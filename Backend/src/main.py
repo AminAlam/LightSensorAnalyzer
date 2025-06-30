@@ -231,6 +231,10 @@ class LightSensorAnalyzer:
             # Get data for the current window size
             window_size_seconds = self.get_window_size()
             timestamps, lux_values, photoresistor_values = self.get_latest_data_with_photoresistor_for_window(window_size_seconds)
+
+            photoresistor_max_value = np.max(photoresistor_values)
+            lux_max_value = np.max(lux_values)
+
             
             if not photoresistor_values or len(photoresistor_values) < 10:
                 # Return empty results if not enough data
@@ -255,7 +259,9 @@ class LightSensorAnalyzer:
                     'duty_cycle': self.calculate_duty_cycle(photoresistor_values),
                     'period': self.calculate_period(photoresistor_values),
                     'rise_time': rise_time,
-                    'fall_time': fall_time
+                    'fall_time': fall_time,
+                    'photoresistor_max_value': photoresistor_max_value,
+                    'lux_max_value': lux_max_value,
                 }
             }
             
@@ -540,6 +546,73 @@ def get_data():
         })
     except Exception as e:
         return jsonify({'error': f'Error getting data: {str(e)}'}), 500
+    
+
+@app.route('/api/data_by_time', methods=['POST'])
+def get_data_by_time():
+    """API endpoint to get current data by time window"""
+    try:
+        data = request.get_json()
+        time_window = data.get('time_window', 10)
+        return_time_stamps = data.get('return_time_stamps', False)
+        return_analysis = data.get('return_analysis', False)
+        return_photoresistor = data.get('return_photoresistor', False)
+        return_lux = data.get('return_lux', False)
+        return_als = data.get('return_als', False)
+        return_photoresistor_fft = data.get('return_photoresistor_fft', False)
+        return_lux_fft = data.get('return_lux_fft', False)
+        return_als_fft = data.get('return_als_fft', False)
+
+        print(f'Following data will be returned: {return_time_stamps}, {return_analysis}, {return_photoresistor}, {return_lux}, {return_als}, {return_photoresistor_fft}, {return_lux_fft}, {return_als_fft}')
+
+        # covert to number if string
+        if isinstance(time_window, str):
+            time_window = float(time_window)
+        n_points = int(time_window * analyzer.sampling_rate)
+        timestamps, lux_values, als_values, photoresistor_values = analyzer.get_latest_data_with_photoresistor(n_points)
+        analysis = analyzer.analyze_current_window()
+
+        lux_fft_freqs, lux_fft_magnitude = analyzer.calc_fft_data_return_list(lux_values)
+        als_fft_freqs, als_fft_magnitude = analyzer.calc_fft_data_return_list(als_values)
+        photoresistor_fft_freqs, photoresistor_fft_magnitude = analyzer.calc_fft_data_return_list(photoresistor_values)
+        
+        # Ensure all data is properly serializable
+        def ensure_serializable(data):
+            """Convert numpy arrays and other non-serializable data to basic Python types"""
+            if hasattr(data, 'tolist'):
+                return data.tolist()
+            elif isinstance(data, (list, tuple)):
+                return [ensure_serializable(item) for item in data]
+            elif isinstance(data, dict):
+                return {key: ensure_serializable(value) for key, value in data.items()}
+            elif isinstance(data, (int, float, str, bool, type(None))):
+                return data
+            else:
+                return str(data)  # Convert anything else to string
+        
+        data = {}
+        if return_time_stamps:
+            data['timestamps'] = ensure_serializable(timestamps)
+        if return_lux:
+            data['lux_values'] = ensure_serializable(lux_values)
+        if return_als:
+            data['als_values'] = ensure_serializable(als_values)
+        if return_photoresistor:
+            data['photoresistor_values'] = ensure_serializable(photoresistor_values)
+        if return_analysis:
+            data['analysis'] = ensure_serializable(analysis)
+        if return_lux_fft:
+            data['lux_fft'] = ensure_serializable(lux_fft_freqs, lux_fft_magnitude)
+        if return_als_fft:
+            data['als_fft'] = ensure_serializable(als_fft_freqs, als_fft_magnitude)
+        if return_photoresistor_fft:
+            data['photoresistor_fft'] = ensure_serializable(photoresistor_fft_freqs, photoresistor_fft_magnitude)
+        print(f'Data returned: {data}')
+
+        return jsonify(data)
+        
+    except Exception as e:
+        return jsonify({'error': f'Error getting data by time: {str(e)}'}), 500
 
 @app.route('/api/charts')
 def get_charts():
