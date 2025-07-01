@@ -789,7 +789,7 @@
                 </div>
                 <div class="custom-window-input" id="customWindowInput">
                     <label>Custom window (seconds): </label>
-                    <input type="number" id="customWindowValue" value="15" min="1" max="300" 
+                    <input type="number" id="customWindowValue" value="15" min="0.01" max="300" 
                            onchange="applyCustomWindowSize()" onkeypress="handleCustomWindowKeypress(event)">
                 </div>
             </div>
@@ -1474,14 +1474,14 @@
 
         function applyCustomWindowSize() {
             try {
-                const customValue = parseInt(document.getElementById('customWindowValue').value);
-                if (customValue && customValue >= 1 && customValue <= 300) {
+                const customValue = parseFloat(document.getElementById('customWindowValue').value);
+                if (customValue && customValue >= 0.01 && customValue <= 300) {
                     currentWindowSizeSeconds = customValue;
                     updateWindowBadge(currentWindowSizeSeconds);
                     updateBackendWindowSize(currentWindowSizeSeconds);
                     console.log(`Custom window size set to: ${currentWindowSizeSeconds}s`);
                 } else {
-                    alert('Please enter a valid window size between 1 and 300 seconds.');
+                    alert('Please enter a valid window size between 0.01 and 300 seconds.');
                 }
             } catch (error) {
                 console.error('Error applying custom window size:', error);

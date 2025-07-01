@@ -213,7 +213,9 @@ class LightSensorAnalyzer:
             if closest_pre_neg_peak_idx is None or closest_post_neg_peak_idx is None:
                 continue
 
-            rise_time = (peak_idx - closest_pre_neg_peak_idx) / self.sampling_rate
+            # find closet point before the peak where value is 90% of the peak
+            closest_90_percent_pre_pos_peak_idx = np.argmin(np.abs(data_norm[closest_pre_neg_peak_idx:peak_idx] - 0.7*data_norm[peak_idx])) + closest_pre_neg_peak_idx
+            rise_time = (closest_90_percent_pre_pos_peak_idx - closest_pre_neg_peak_idx) / self.sampling_rate
             fall_time = (closest_post_neg_peak_idx - peak_idx) / self.sampling_rate
             rise_times.append(rise_time)
             fall_times.append(fall_time)
@@ -332,7 +334,7 @@ class LightSensorAnalyzer:
         photoresistor_values = data[:, 4]  # Fifth column
         
         last_timestamp = timestamps[-1]
-        first_timestamp = last_timestamp - seconds*1000
+        first_timestamp = last_timestamp - int(seconds*1000)
 
         time_stamps = timestamps[timestamps >= first_timestamp]
         lux_values = lux_values[timestamps >= first_timestamp]
@@ -340,7 +342,7 @@ class LightSensorAnalyzer:
         photoresistor_values = photoresistor_values[timestamps >= first_timestamp]
 
         # interpolate the data to the sampling rate
-        timestamps_interpolated = np.linspace(first_timestamp, last_timestamp, seconds*self.sampling_rate)
+        timestamps_interpolated = np.linspace(first_timestamp, last_timestamp, int(seconds*self.sampling_rate))
         lux_values_interpolated = np.interp(timestamps_interpolated, time_stamps, lux_values)
         als_values_interpolated = np.interp(timestamps_interpolated, time_stamps, als_values)
         photoresistor_values_interpolated = np.interp(timestamps_interpolated, time_stamps, photoresistor_values)
@@ -483,7 +485,7 @@ class LightSensorAnalyzer:
     def set_window_size(self, size_seconds):
         """Set the current analysis window size in seconds"""
         with self.data_lock:
-            self.current_window_size_seconds = max(1, min(300, size_seconds))  # Clamp between 1-300 seconds
+            self.current_window_size_seconds = max(0.01, min(300, size_seconds))  # Clamp between 1-300 seconds
             print(f"Analysis window size set to {self.current_window_size_seconds} seconds")
     
     def get_window_size(self):
@@ -757,7 +759,9 @@ def download_report(filename):
 def get_chart_data():
     """API endpoint to get raw chart data for frontend plotting"""
     try:
-        timestamps, lux_values, als_values, photoresistor_values = analyzer.get_latest_data(seconds=1)
+        window_size = analyzer.get_window_size()
+        print(f'Window size: {window_size}')
+        timestamps, lux_values, als_values, photoresistor_values = analyzer.get_latest_data(seconds=window_size)
 
         # Calculate FFT for all signals (LUX, ALS, and Photoresistor)
         lux_fft_freqs, lux_fft_magnitude = analyzer.calc_fft_data_return_list(lux_values)
@@ -829,10 +833,10 @@ def set_window_size():
         window_size = data.get('window_size', 2)
         
         # Validate window size
-        if not isinstance(window_size, (int, float)) or window_size < 1 or window_size > 300:
+        if not isinstance(window_size, (int, float)) or window_size < 0.01 or window_size > 300:
             return jsonify({
                 'success': False,
-                'message': 'Window size must be between 1 and 300 seconds'
+                'message': 'Window size must be between 0.01 and 300 seconds'
             }), 400
         
         # Set the window size
