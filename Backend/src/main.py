@@ -183,6 +183,17 @@ class LightSensorAnalyzer:
     
     def calculate_rise_fall_time(self, data):
         """Calculate rise and fall times of the light signal using 10-90% method"""
+        rise_times, fall_times = self.calculate_rise_fall_time_all(data)
+
+        # Calculate mean times, handling empty lists
+        rise_time = np.mean(rise_times) if rise_times else 0  # convert to ms
+        fall_time = np.mean(fall_times) if fall_times else 0  # convert to ms
+
+        return rise_time, fall_time
+    
+
+    def calculate_rise_fall_time_all(self, data):
+        """Calculate rise and fall times of the light signal using 10-90% method"""
         if len(data) < 10:
             return 0, 0
             
@@ -215,17 +226,15 @@ class LightSensorAnalyzer:
 
             # find closet point before the peak where value is 90% of the peak
             closest_90_percent_pre_pos_peak_idx = np.argmin(np.abs(data_norm[closest_pre_neg_peak_idx:peak_idx] - 0.7*data_norm[peak_idx])) + closest_pre_neg_peak_idx
-            rise_time = (closest_90_percent_pre_pos_peak_idx - closest_pre_neg_peak_idx) / self.sampling_rate
-            fall_time = (closest_post_neg_peak_idx - peak_idx) / self.sampling_rate
-            rise_times.append(rise_time)
-            fall_times.append(fall_time)
-            
+            closest_90_percent_post_pos_peak_idx = np.argmin(np.abs(data_norm[peak_idx:closest_post_neg_peak_idx] - 0.7*data_norm[peak_idx])) + peak_idx
+            closest_10_percent_post_pos_peak_idx = np.argmin(np.abs(data_norm[peak_idx:closest_post_neg_peak_idx] - 0.1*data_norm[peak_idx])) + peak_idx
+            closet_10_percent_pre_pos_peak_idx = np.argmin(np.abs(data_norm[closest_pre_neg_peak_idx:peak_idx] - 0.1*data_norm[peak_idx])) + closest_pre_neg_peak_idx
+            rise_time = (closest_90_percent_pre_pos_peak_idx - closet_10_percent_pre_pos_peak_idx) / self.sampling_rate
+            fall_time = (closest_10_percent_post_pos_peak_idx - closest_90_percent_post_pos_peak_idx) / self.sampling_rate
+            rise_times.append(rise_time*1000)
+            fall_times.append(fall_time*1000)
 
-        # Calculate mean times, handling empty lists
-        rise_time = np.mean(rise_times) * 1000 if rise_times else 0  # convert to ms
-        fall_time = np.mean(fall_times) * 1000 if fall_times else 0  # convert to ms
-
-        return rise_time, fall_time
+        return rise_times, fall_times
 
     def analyze_current_window(self):
         """Analyze the current window size and return results"""

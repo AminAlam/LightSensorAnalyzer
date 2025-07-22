@@ -421,10 +421,11 @@ class ReportGenerator:
             
             if len(pos_peaks_indices) < 2 or len(neg_peaks_indices) < 2:
                 return [], [], []
-                
-            individual_rise_times = []
-            individual_fall_times = []
+
+            individual_rise_times, individual_fall_times = self.analyzer.calculate_rise_fall_time_all(data)
             individual_duty_cycles = []
+
+            print(individual_rise_times)
             
             # Calculate individual rise and fall times for each peak
             for peak_idx in pos_peaks_indices:
@@ -440,15 +441,6 @@ class ReportGenerator:
                 
                 if closest_pre_neg_peak_idx is None or closest_post_neg_peak_idx is None:
                     continue
-                
-                # Calculate rise and fall times
-                rise_time = (peak_idx - closest_pre_neg_peak_idx) / self.analyzer.sampling_rate * 1000  # ms
-                fall_time = (closest_post_neg_peak_idx - peak_idx) / self.analyzer.sampling_rate * 1000  # ms
-                
-                if rise_time > 0:
-                    individual_rise_times.append(rise_time)
-                if fall_time > 0:
-                    individual_fall_times.append(fall_time)
             
             # Calculate duty cycle for each period between consecutive peaks
             for i in range(len(pos_peaks_indices) - 1):
